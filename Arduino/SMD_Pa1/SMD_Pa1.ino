@@ -4,20 +4,8 @@
  
  Requires the Adafruit NeoPixel library. It's awesome, go get it.
  https://github.com/adafruit/Adafruit_NeoPixel
- 
- This simple example code runs three sets of animations on a group of WS2812
- breakout boards. The more boards you link up, the better these animations
- will look. 
- 
- For help linking WS2812 breakouts, checkout our hookup guide:
- https://learn.sparkfun.com/tutorials/ws2812-breakout-hookup-guide
- 
- Before uploading the code, make sure you adjust the two defines at the
- top of this sketch: PIN and LED_COUNT. Pin should be the Arduino pin
- you've got connected to the first pixel's DIN pin. By default it's
- set to Arduino pin 4. LED_COUNT should be the number of breakout boards
- you have linked up.
- */
+*/
+
 #include <Servo.h>    // include servo library
 #include "pitches.h"  // include pitches h file?
 
@@ -79,7 +67,8 @@ void loop(){
     myservo.write(pos);    // tell servo to go to position in variable 'pos' 
     delay(15);                       // waits 15ms for the servo to reach the position 
   } 
-  delay(200);
+  delay(500);
+  digitalWrite(headLED, LOW);
 
   Serial.print("PostionRight = ");
   ping();
@@ -87,13 +76,14 @@ void loop(){
 
   delay(3000);
 
-  digitalWrite(headLED, LOW);
+  digitalWrite(headLED, HIGH);
   for(pos = 160; pos>=25; pos-=5)     // goes from 180 degrees to 0 degrees 
   {                                
     myservo.write(pos);              // tell servo to go to position in variable 'pos' 
     delay(15);                       // waits 15ms for the servo to reach the position 
   }
-  delay(200);
+  delay(500);
+  digitalWrite(headLED, LOW);
 
   Serial.print("PostionLeft = ");
   ping();
