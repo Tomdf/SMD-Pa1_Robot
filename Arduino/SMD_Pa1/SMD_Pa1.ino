@@ -4,7 +4,7 @@
  
  Requires the Adafruit NeoPixel library. It's awesome, go get it.
  https://github.com/adafruit/Adafruit_NeoPixel
-*/
+ */
 
 #include <Servo.h>    // include servo library
 #include "pitches.h"  // include pitches h file?
@@ -26,12 +26,9 @@ const int pingPin = 4;    // connection to ultrasonic sensor
 int headLED = 9;
 int pos = 0;    // variable to store the servo position
 
-// notes in the melody:
-int melody[] = {
-  NOTE_C4, NOTE_E3, NOTE_G3, 0, NOTE_F3, NOTE_A3, NOTE_A4, NOTE_B4};
-// note durations: 4 = quarter note, 8 = eighth note, etc.:
-int noteDurations[] = {
-  8, 10, 6, 8,10,8,8,10 };
+
+
+long randNumber;
 
 void setup()
 {
@@ -41,55 +38,51 @@ void setup()
   leds.begin();  // Call this to start up the LED strip.
   clearLEDs();   // This function, defined below, turns all LEDs off...
   setColor(PURPLE,1);
-
-  // iterate over the notes of the melody:
-  for (int thisNote = 0; thisNote < 8; thisNote++) {
-
-    // to calculate the note duration, take one second 
-    // divided by the note type.
-    //e.g. quarter note = 1000 / 4, eighth note = 1000/8, etc.
-    int noteDuration = 1000/noteDurations[thisNote];
-    tone(10, melody[thisNote],noteDuration);
-
-    // to distinguish the notes, set a minimum time between them.
-    // the note's duration + 30% seems to work well:
-    int pauseBetweenNotes = noteDuration * 1.30;
-    delay(pauseBetweenNotes);
-    // stop the tone playing:
-    noTone(10);
-  }
+  helloWorld();
+  randomSeed(analogRead(0));
 }
 
 void loop(){
-  digitalWrite(headLED, HIGH);
-  for(pos = 20; pos < 160; pos += 5)  // goes from 0 degrees to 180 degrees 
-  {                                  // in steps of 1 degree 
-    myservo.write(pos);    // tell servo to go to position in variable 'pos' 
-    delay(15);                       // waits 15ms for the servo to reach the position 
-  } 
-  delay(500);
-  digitalWrite(headLED, LOW);
-
-  Serial.print("PostionRight = ");
-  ping();
-  Serial.println();
-
+  randNumber = random(50);
+  if (randNumber == 1){
+    sup();
+    randNumber = random(20, 160);
+    myservo.write(randNumber);    
+  }
   delay(3000);
 
+
+  /*
   digitalWrite(headLED, HIGH);
-  for(pos = 160; pos>=25; pos-=5)     // goes from 180 degrees to 0 degrees 
-  {                                
-    myservo.write(pos);              // tell servo to go to position in variable 'pos' 
-    delay(15);                       // waits 15ms for the servo to reach the position 
-  }
-  delay(500);
-  digitalWrite(headLED, LOW);
-
-  Serial.print("PostionLeft = ");
-  ping();
-  Serial.println();
-
-  delay(3000);  
+   for(pos = 20; pos < 160; pos += 5)  // goes from 0 degrees to 180 degrees 
+   {                                  // in steps of 1 degree 
+   myservo.write(pos);    // tell servo to go to position in variable 'pos' 
+   delay(15);                       // waits 15ms for the servo to reach the position 
+   }
+   digitalWrite(headLED, LOW);
+   delay(500);
+   
+   Serial.print("PostionLeft = ");
+   ping();
+   Serial.println();
+   
+   delay(3000);
+   
+   digitalWrite(headLED, HIGH);
+   for(pos = 160; pos>=25; pos-=5)     // goes from 180 degrees to 0 degrees 
+   {                                
+   myservo.write(pos);              // tell servo to go to position in variable 'pos' 
+   delay(15);                       // waits 15ms for the servo to reach the position 
+   }
+   digitalWrite(headLED, LOW);
+   delay(500);
+   
+   Serial.print("PostionRight = ");
+   ping();
+   Serial.println();
+   
+   delay(3000);  
+   */
 }
 
 void setColor(unsigned long color, byte brightness)
@@ -167,6 +160,63 @@ long microsecondsToCentimeters(long microseconds)
   // object we take half of the distance travelled.
   return microseconds / 29 / 2;
 }
+
+void helloWorld(){
+  // notes in the melody:
+  int melody[] = {
+    NOTE_C4, NOTE_E3, NOTE_G3, 0, NOTE_F3, NOTE_A3, NOTE_A4, NOTE_B4    };
+  // note durations: 4 = quarter note, 8 = eighth note, etc.:
+  int noteDurations[] = {
+    8, 10, 6, 8,10,8,8,10     };
+  // iterate over the notes of the melody:
+  for (int thisNote = 0; thisNote < 8; thisNote++)
+  {
+    digitalWrite(headLED, HIGH);
+    // to calculate the note duration, take one second 
+    // divided by the note type.
+    //e.g. quarter note = 1000 / 4, eighth note = 1000/8, etc.
+    int noteDuration = 1000/noteDurations[thisNote];
+    tone(10, melody[thisNote],noteDuration);
+
+    // to distinguish the notes, set a minimum time between them.
+    // the note's duration + 30% seems to work well:
+    int pauseBetweenNotes = noteDuration * 1.30;
+    delay(pauseBetweenNotes);
+    // stop the tone playing:
+    noTone(10);
+    digitalWrite(headLED, LOW);
+  }
+}
+
+void sup(){
+  // notes in the melody:
+  int melody[] = {
+    NOTE_B4, NOTE_A4, NOTE_B4  };
+  // note durations: 4 = quarter note, 8 = eighth note, etc.:
+  int noteDurations[] = {
+    8,10,8  };
+  // iterate over the notes of the melody:
+  for (int thisNote = 0; thisNote < 3; thisNote++)
+  {
+    digitalWrite(headLED, HIGH);
+    // to calculate the note duration, take one second 
+    // divided by the note type.
+    //e.g. quarter note = 1000 / 4, eighth note = 1000/8, etc.
+    int noteDuration = 1000/noteDurations[thisNote];
+    tone(10, melody[thisNote],noteDuration);
+
+    // to distinguish the notes, set a minimum time between them.
+    // the note's duration + 30% seems to work well:
+    int pauseBetweenNotes = noteDuration * 1.30;
+    delay(pauseBetweenNotes);
+    // stop the tone playing:
+    noTone(10);
+    digitalWrite(headLED, LOW);
+  }
+}
+
+
+
 
 
 
