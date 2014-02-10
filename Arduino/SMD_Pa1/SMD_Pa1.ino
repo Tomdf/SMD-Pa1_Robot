@@ -26,9 +26,11 @@ const int pingPin = 4;    // connection to ultrasonic sensor
 int headLED = 9;
 int pos = 0;    // variable to store the servo position
 
+unsigned long eyeColor = 16777215;
 
+unsigned long randNumber;
 
-long randNumber;
+unsigned long distance = 0;
 
 void setup()
 {
@@ -37,20 +39,37 @@ void setup()
   pinMode(headLED, OUTPUT);
   leds.begin();  // Call this to start up the LED strip.
   clearLEDs();   // This function, defined below, turns all LEDs off...
-  setColor(PURPLE,1);
+  setColor(eyeColor,1);
   helloWorld();
   randomSeed(analogRead(0));
 }
 
 void loop(){
-  randNumber = random(50);
+  randNumber = random(3000);
   if (randNumber == 1){
     sup();
     randNumber = random(20, 160);
     myservo.write(randNumber);    
   }
-  delay(3000);
-
+    
+  delay(300);  
+  ping();
+  
+  Serial.print("Current Distance = ");
+  Serial.print(distance);
+  Serial.print(" microseconds, ");
+  Serial.println();
+  
+  if (distance <= 1000){
+    setColor(RED,1);
+    randNumber = random(20, 160);
+    myservo.write(randNumber);
+    sup();
+    randNumber = random(20, 160);
+    myservo.write(randNumber);
+    delay(200);
+    setColor(WHITE,1);    
+  }
 
   /*
   digitalWrite(headLED, HIGH);
@@ -134,12 +153,16 @@ void ping()
   inches = microsecondsToInches(duration);
   cm = microsecondsToCentimeters(duration);
 
+  distance = duration;
+/*
+  Serial.print(duration);
+  Serial.print(" microseconds, ");
   Serial.print(inches);
   Serial.print("in, ");
   Serial.print(cm);
   Serial.print("cm");
   Serial.println();
-
+*/
   delay(100);
 }
 
@@ -164,10 +187,10 @@ long microsecondsToCentimeters(long microseconds)
 void helloWorld(){
   // notes in the melody:
   int melody[] = {
-    NOTE_C4, NOTE_E3, NOTE_G3, 0, NOTE_F3, NOTE_A3, NOTE_A4, NOTE_B4    };
+    NOTE_C4, NOTE_E3, NOTE_G3, 0, NOTE_F3, NOTE_A3, NOTE_A4, NOTE_B4        };
   // note durations: 4 = quarter note, 8 = eighth note, etc.:
   int noteDurations[] = {
-    8, 10, 6, 8,10,8,8,10     };
+    8, 10, 6, 8,10,8,8,10         };
   // iterate over the notes of the melody:
   for (int thisNote = 0; thisNote < 8; thisNote++)
   {
@@ -191,10 +214,10 @@ void helloWorld(){
 void sup(){
   // notes in the melody:
   int melody[] = {
-    NOTE_B4, NOTE_A4, NOTE_B4  };
+    NOTE_B4, NOTE_A4, NOTE_B4      };
   // note durations: 4 = quarter note, 8 = eighth note, etc.:
   int noteDurations[] = {
-    8,10,8  };
+    8,10,8      };
   // iterate over the notes of the melody:
   for (int thisNote = 0; thisNote < 3; thisNote++)
   {
@@ -214,6 +237,8 @@ void sup(){
     digitalWrite(headLED, LOW);
   }
 }
+
+
 
 
 
