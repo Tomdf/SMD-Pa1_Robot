@@ -40,14 +40,14 @@ void setup()
   leds.begin();  // Call this to start up the LED strip.
   clearLEDs();   // This function, defined below, turns all LEDs off...
   setColor(eyeColor,1);
-  helloWorld();
+  melodyHello();
   randomSeed(analogRead(0));
 }
 
 void loop(){
-  randNumber = random(3000);
+  randNumber = random(500);
   if (randNumber == 1){
-    sup();
+    melodySup();
     randNumber = random(20, 160);
     myservo.write(randNumber);    
   }
@@ -60,11 +60,11 @@ void loop(){
   Serial.print(" microseconds, ");
   Serial.println();
   
-  if (distance <= 1000){
+  if (distance <= 1500){
     setColor(RED,1);
     randNumber = random(20, 160);
     myservo.write(randNumber);
-    sup();
+    melodyDanger();
     randNumber = random(20, 160);
     myservo.write(randNumber);
     delay(200);
@@ -184,7 +184,7 @@ long microsecondsToCentimeters(long microseconds)
   return microseconds / 29 / 2;
 }
 
-void helloWorld(){
+void melodyHello(){
   // notes in the melody:
   int melody[] = {
     NOTE_C4, NOTE_E3, NOTE_G3, 0, NOTE_F3, NOTE_A3, NOTE_A4, NOTE_B4        };
@@ -211,7 +211,7 @@ void helloWorld(){
   }
 }
 
-void sup(){
+void melodySup(){
   // notes in the melody:
   int melody[] = {
     NOTE_B4, NOTE_A4, NOTE_B4      };
@@ -238,6 +238,30 @@ void sup(){
   }
 }
 
+void melodyDanger(){
+  // notes in the melody:
+  int melody[] = {NOTE_A6, NOTE_A6, NOTE_C7};
+  // note durations: 4 = quarter note, 8 = eighth note, etc.:
+  int noteDurations[] = {10,10,6};
+  // iterate over the notes of the melody:
+  for (int thisNote = 0; thisNote < 3; thisNote++)
+  {
+    digitalWrite(headLED, HIGH);
+    // to calculate the note duration, take one second 
+    // divided by the note type.
+    //e.g. quarter note = 1000 / 4, eighth note = 1000/8, etc.
+    int noteDuration = 1000/noteDurations[thisNote];
+    tone(10, melody[thisNote],noteDuration);
+
+    // to distinguish the notes, set a minimum time between them.
+    // the note's duration + 30% seems to work well:
+    int pauseBetweenNotes = noteDuration * 1.30;
+    delay(pauseBetweenNotes);
+    // stop the tone playing:
+    noTone(10);
+    digitalWrite(headLED, LOW);
+  }
+}
 
 
 
