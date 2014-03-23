@@ -1,6 +1,25 @@
-/* Code for the SMD-PA1 robot
+/* Code for the SMD-PA1 robot. Written with Arduino IDE v1.0.5.-r2
+ for a 5V Pro Mini.
+ 
+ Pins in use = 2 interrupt on front left blue button
+ 3
+ 4 ultrasonic sensor
+ 5 head servo
+ 6 front green LED
+ 7 WS2812 RGB LED data
+ 8 left drive servo
+ 9 blue head led
+ 10 head buzzer
+ 11 front right blue button
+ 12 front middle yellow button
+ 13 right drive servo
+ A0
+ A1
+ A2
+ A3
+ 
  Tom Flock
- 2-4-14
+ 3-22-14
  
  Requires the Adafruit NeoPixel library. It's awesome, go get it.
  https://github.com/adafruit/Adafruit_NeoPixel
@@ -20,98 +39,123 @@
 // That'll be what we refer to from here on...
 Adafruit_NeoPixel leds = Adafruit_NeoPixel(LED_COUNT, PIN, NEO_GRB + NEO_KHZ800);
 
-Servo myservo;  // create servo object to control a servo 
+Servo headServo;  //create servo object to control a servo
+Servo leftDrive;
+Servo rightDrive;
 
-const int pingPin = 4;    // connection to ultrasonic sensor
-int headLED = 9;
-int pos = 0;    // variable to store the servo position
+const int pingPin = 4;   //connection to ultrasonic sensor
+const int grnLED = 6;   //connetion to front green LED
+const int headLED = 9;   //connetion to blue head LED
+const int yellowBtn = 12; //connection to front yellow button
 
-unsigned long eyeColor = 16777215;
+//var for holding operation mode, default 0
+int modeSelect = 0;
 
-unsigned long randNumber;
+//variable used for interrupt debouncing
+unsigned long lastMillis = 0;
 
-unsigned long distance = 0;
+long eyeColor = 16777215;  //value for the WS2812 eye LEDs
+unsigned long distance = 0;  //ultrasonic sensor value
+unsigned long randNumber;  //variable for holding random numbers
 
 void setup()
 {
   Serial.begin(9600);
-  myservo.attach(5);
+  attachInterrupt(0, interruptOne, RISING); //create interrupt on pin 2
+  headServo.attach(5);
+  leftDrive.attach(8);
+  rightDrive.attach(13);
   pinMode(headLED, OUTPUT);
-  leds.begin();  // Call this to start up the LED strip.
-  clearLEDs();   // This function, defined below, turns all LEDs off...
-  setColor(eyeColor,1);
-  melodyHello();
-  randomSeed(analogRead(0));
+  pinMode(grnLED, OUTPUT);
+  leds.begin();  //initiate WS2812 LEDs
+  clearLEDs();   //turns all LEDs off...
+  setColor(eyeColor,1); //set eye color and brightness
+  melodyHello();  //play a little ditty
+  randomSeed(analogRead(0)); //read noise for a random seed
 }
 
-void loop(){
-  randNumber = random(500);
-  if (randNumber == 1){
-    melodySup();
-    randNumber = random(20, 160);
-    myservo.write(randNumber);    
+void loop(){ 
+  Serial.print("Current Mode:");
+  Serial.println(modeSelect);
+  //choose a function based on the modeSelect value
+  switch(modeSelect){
+  case 0:
+    idleMode();
+    break;
+  case 1:
+    proxAlarm();
+    break;  
   }
-    
-  delay(300);  
-  ping();
-  
-  Serial.print("Current Distance = ");
-  Serial.print(distance);
-  Serial.print(" microseconds, ");
-  Serial.println();
-  
-  if (distance <= 1500){
+  if (digitalRead(yellowBtn)){
+    setColor(YELLOW,1);
+    Serial.println("Yellow Button Pressed.");
+    if (modeSelect <= 0){
+      ++modeSelect;
+    }
+    else {
+      modeSelect = 0;
+      headServo.write(90);
+    }
+    delay(500);
+  } 
+}
+
+void interruptOne(){
+  unsigned long currentMillis = millis();
+  if(currentMillis - lastMillis > 1500){    
+    setColor(BLUE,1);
+  }
+  delay(250);
+  lastMillis = currentMillis;
+}
+
+//while in idle mode the bot sits and waits for an interrupt
+//to change the mode. The random head turn is added for flavor
+void idleMode(){
+  setColor(0x99CC00,1);
+  randHeadTurn();
+  digitalWrite(grnLED, HIGH);
+  delay(1000);
+  digitalWrite(grnLED, LOW);
+  delay(750);
+}
+
+void proxAlarm(){
+  setColor(RED,5); 
+  randHeadTurn(); //randomly turn head and play a song
+  ping(); //read the ultrasonic sensor
+  Serial.println(distance);
+  //if somthing is within the specified distance, play a song
+  //and turn head
+  if (distance <= 5000){
     setColor(RED,1);
     randNumber = random(20, 160);
-    myservo.write(randNumber);
-    melodyDanger();
+    headServo.write(randNumber);
+    randomMelody();
     randNumber = random(20, 160);
-    myservo.write(randNumber);
+    headServo.write(randNumber);
     delay(200);
-    setColor(WHITE,1);    
+    setColor(RED,5);     
   }
-
-  /*
-  digitalWrite(headLED, HIGH);
-   for(pos = 20; pos < 160; pos += 5)  // goes from 0 degrees to 180 degrees 
-   {                                  // in steps of 1 degree 
-   myservo.write(pos);    // tell servo to go to position in variable 'pos' 
-   delay(15);                       // waits 15ms for the servo to reach the position 
-   }
-   digitalWrite(headLED, LOW);
-   delay(500);
-   
-   Serial.print("PostionLeft = ");
-   ping();
-   Serial.println();
-   
-   delay(3000);
-   
-   digitalWrite(headLED, HIGH);
-   for(pos = 160; pos>=25; pos-=5)     // goes from 180 degrees to 0 degrees 
-   {                                
-   myservo.write(pos);              // tell servo to go to position in variable 'pos' 
-   delay(15);                       // waits 15ms for the servo to reach the position 
-   }
-   digitalWrite(headLED, LOW);
-   delay(500);
-   
-   Serial.print("PostionRight = ");
-   ping();
-   Serial.println();
-   
-   delay(3000);  
-   */
+  delay(250); 
 }
 
-void setColor(unsigned long color, byte brightness)
-{
+void randHeadTurn(){
+  //randomly turn head and play a song
+  randNumber = random(500);
+  if (randNumber == 1){
+    randomMelody();
+    randNumber = random(20, 160);
+    headServo.write(randNumber);    
+  }
+}
+
+void setColor(unsigned long color, byte brightness){
   byte red = (color & 0xFF0000) >> 16;
   byte green = (color & 0x00FF00) >> 8;
   byte blue = (color & 0x0000FF);
 
-  for (int i=0; i<=LED_COUNT-1; i++)
-  {
+  for (int i=0; i<=LED_COUNT-1; i++){
     leds.setPixelColor(i, red/brightness, green/brightness, blue/brightness);
   }
   leds.show();  // Turn the LEDs on
@@ -119,17 +163,14 @@ void setColor(unsigned long color, byte brightness)
 
 // Sets all LEDs to off, but DOES NOT update the display;
 // call leds.show() to actually turn them off after this.
-void clearLEDs()
-{
-  for (int i=0; i<LED_COUNT; i++)
-  {
+void clearLEDs(){
+  for (int i=0; i<LED_COUNT; i++){
     leds.setPixelColor(i, 0);
     leds.show();
   }
 }
 
-void ping()
-{
+void ping(){
   // establish variables for duration of the ping,
   // and the distance result in inches and centimeters:
   long duration, inches, cm;
@@ -148,40 +189,21 @@ void ping()
   // of the ping to the reception of its echo off of an object.
   pinMode(pingPin, INPUT);
   duration = pulseIn(pingPin, HIGH);
-
-  // convert the time into a distance
-  inches = microsecondsToInches(duration);
-  cm = microsecondsToCentimeters(duration);
-
   distance = duration;
-/*
-  Serial.print(duration);
-  Serial.print(" microseconds, ");
-  Serial.print(inches);
-  Serial.print("in, ");
-  Serial.print(cm);
-  Serial.print("cm");
-  Serial.println();
-*/
   delay(100);
 }
 
-long microsecondsToInches(long microseconds)
-{
-  // According to Parallax's datasheet for the PING))), there are
-  // 73.746 microseconds per inch (i.e. sound travels at 1130 feet per
-  // second).  This gives the distance travelled by the ping, outbound
-  // and return, so we divide by 2 to get the distance of the obstacle.
-  // See: http://www.parallax.com/dl/docs/prod/acc/28015-PING-v1.3.pdf
-  return microseconds / 74 / 2;
-}
-
-long microsecondsToCentimeters(long microseconds)
-{
-  // The speed of sound is 340 m/s or 29 microseconds per centimeter.
-  // The ping travels out and back, so to find the distance of the
-  // object we take half of the distance travelled.
-  return microseconds / 29 / 2;
+void randomMelody(){
+  randNumber = random(1, 4);
+  if (randNumber == 1){
+    melodyHello();
+  }
+  else if (randNumber == 2){
+    melodySup();
+  }
+  else if (randNumber == 3){
+    melodyDanger();
+  }
 }
 
 void melodyHello(){
@@ -190,10 +212,9 @@ void melodyHello(){
     NOTE_C4, NOTE_E3, NOTE_G3, 0, NOTE_F3, NOTE_A3, NOTE_A4, NOTE_B4        };
   // note durations: 4 = quarter note, 8 = eighth note, etc.:
   int noteDurations[] = {
-    8, 10, 6, 8,10,8,8,10         };
+    8, 10, 6, 8,10,8,8,10        };
   // iterate over the notes of the melody:
-  for (int thisNote = 0; thisNote < 8; thisNote++)
-  {
+  for (int thisNote = 0; thisNote < 8; thisNote++){
     digitalWrite(headLED, HIGH);
     // to calculate the note duration, take one second 
     // divided by the note type.
@@ -214,13 +235,12 @@ void melodyHello(){
 void melodySup(){
   // notes in the melody:
   int melody[] = {
-    NOTE_B4, NOTE_A4, NOTE_B4      };
+    NOTE_B4, NOTE_A4, NOTE_B4        };
   // note durations: 4 = quarter note, 8 = eighth note, etc.:
   int noteDurations[] = {
-    8,10,8      };
+    8,10,8        };
   // iterate over the notes of the melody:
-  for (int thisNote = 0; thisNote < 3; thisNote++)
-  {
+  for (int thisNote = 0; thisNote < 3; thisNote++){
     digitalWrite(headLED, HIGH);
     // to calculate the note duration, take one second 
     // divided by the note type.
@@ -240,12 +260,13 @@ void melodySup(){
 
 void melodyDanger(){
   // notes in the melody:
-  int melody[] = {NOTE_A6, NOTE_A6, NOTE_C7};
+  int melody[] = {
+    NOTE_A6, NOTE_A6, NOTE_C7        };
   // note durations: 4 = quarter note, 8 = eighth note, etc.:
-  int noteDurations[] = {10,10,6};
+  int noteDurations[] = {
+    10,10,6        };
   // iterate over the notes of the melody:
-  for (int thisNote = 0; thisNote < 3; thisNote++)
-  {
+  for (int thisNote = 0; thisNote < 3; thisNote++){
     digitalWrite(headLED, HIGH);
     // to calculate the note duration, take one second 
     // divided by the note type.
@@ -262,6 +283,12 @@ void melodyDanger(){
     digitalWrite(headLED, LOW);
   }
 }
+
+
+
+
+
+
 
 
 
