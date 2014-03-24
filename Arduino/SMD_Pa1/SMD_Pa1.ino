@@ -114,6 +114,8 @@ void interruptOne(){
 void idleMode(){
   setColor(0x99CC00,1);
   randHeadTurn();
+  //leftDrive.write(10);
+  //rightDrive.write(170);
   digitalWrite(grnLED, HIGH);
   delay(1000);
   digitalWrite(grnLED, LOW);
