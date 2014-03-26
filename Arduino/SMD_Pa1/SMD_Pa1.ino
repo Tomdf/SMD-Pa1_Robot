@@ -51,6 +51,8 @@ const int yellowBtn = 12; //connection to front yellow button
 //var for holding operation mode, default 0
 int modeSelect = 0;
 
+int pos = 0; 
+
 //variable used for interrupt debouncing
 unsigned long lastMillis = 0;
 
@@ -65,6 +67,8 @@ void setup()
   headServo.attach(5);
   leftDrive.attach(8);
   rightDrive.attach(13);
+  rightDrive.write(94.25); //stop position of right drive servo
+  leftDrive.write(93); //stop position of left drive servo
   pinMode(headLED, OUTPUT);
   pinMode(grnLED, OUTPUT);
   leds.begin();  //initiate WS2812 LEDs
@@ -86,6 +90,22 @@ void loop(){
     proxAlarm();
     break;  
   }
+  
+  /*
+  for(pos = 0; pos < 180; pos += 1)  // goes from 0 degrees to 180 degrees 
+  {                                  // in steps of 1 degree 
+    leftDrive.write(pos);              // tell servo to go to position in variable 'pos' 
+    Serial.println(pos);
+    delay(500);                       // waits 15ms for the servo to reach the position 
+  } 
+  for(pos = 180; pos>=1; pos-=1)     // goes from 180 degrees to 0 degrees 
+  {                                
+    leftDrive.write(pos);              // tell servo to go to position in variable 'pos' 
+    Serial.println(pos);
+    delay(500);                       // waits 15ms for the servo to reach the position 
+  }
+  */
+  
   if (digitalRead(yellowBtn)){
     setColor(YELLOW,1);
     Serial.println("Yellow Button Pressed.");
@@ -125,7 +145,7 @@ void idleMode(){
 void proxAlarm(){
   setColor(RED,5); 
   randHeadTurn(); //randomly turn head and play a song
-  ping(); //read the ultrasonic sensor
+  distance = ping();
   Serial.println(distance);
   //if somthing is within the specified distance, play a song
   //and turn head
@@ -140,6 +160,20 @@ void proxAlarm(){
     setColor(RED,5);     
   }
   delay(250); 
+}
+
+void wanderer(){
+  static int leftDistance;
+  static int centerDistance;
+  static int rightDistance;
+  
+  setColor(PURPLE,1);  //change eye color
+  delay(500);          //delay for human interaction
+  melodyHello();       //play a song
+  delay(1000);         //delay for the music
+  headServo.write(20); //turn head to the left 
+  delay(200);          //delay for servo turning
+  
 }
 
 void randHeadTurn(){
@@ -172,10 +206,9 @@ void clearLEDs(){
   }
 }
 
-void ping(){
+unsigned long ping(){
   // establish variables for duration of the ping,
   // and the distance result in inches and centimeters:
-  long duration, inches, cm;
 
   // The PING))) is triggered by a HIGH pulse of 2 or more microseconds.
   // Give a short LOW pulse beforehand to ensure a clean HIGH pulse:
@@ -190,8 +223,7 @@ void ping(){
   // pulse whose duration is the time (in microseconds) from the sending
   // of the ping to the reception of its echo off of an object.
   pinMode(pingPin, INPUT);
-  duration = pulseIn(pingPin, HIGH);
-  distance = duration;
+  return pulseIn(pingPin, HIGH);
   delay(100);
 }
 
