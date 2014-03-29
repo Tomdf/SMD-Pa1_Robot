@@ -51,7 +51,7 @@ const int yellowBtn = 12; //connection to front yellow button
 //var for holding operation mode, default 0
 int modeSelect = 0;
 
-int pos = 0; 
+boolean panDirection = true; //for telling if the head is in the left or right position
 
 //variable used for interrupt debouncing
 unsigned long lastMillis = 0;
@@ -65,10 +65,10 @@ void setup()
   Serial.begin(9600);
   attachInterrupt(0, interruptOne, RISING); //create interrupt on pin 2
   headServo.attach(5);
-  leftDrive.attach(8);
-  rightDrive.attach(13);
-  rightDrive.write(94.25); //stop position of right drive servo
-  leftDrive.write(93); //stop position of left drive servo
+  leftDrive.attach(13);
+  rightDrive.attach(8);
+  leftDrive.write(94.25); //stop position of right drive servo
+  rightDrive.write(93); //stop position of left drive servo
   pinMode(headLED, OUTPUT);
   pinMode(grnLED, OUTPUT);
   leds.begin();  //initiate WS2812 LEDs
@@ -89,30 +89,18 @@ void loop(){
   case 1:
     proxAlarm();
     break;  
+  case 2:
+    wanderer();
+    break;  
   }
-  
-  /*
-  for(pos = 0; pos < 180; pos += 1)  // goes from 0 degrees to 180 degrees 
-  {                                  // in steps of 1 degree 
-    leftDrive.write(pos);              // tell servo to go to position in variable 'pos' 
-    Serial.println(pos);
-    delay(500);                       // waits 15ms for the servo to reach the position 
-  } 
-  for(pos = 180; pos>=1; pos-=1)     // goes from 180 degrees to 0 degrees 
-  {                                
-    leftDrive.write(pos);              // tell servo to go to position in variable 'pos' 
-    Serial.println(pos);
-    delay(500);                       // waits 15ms for the servo to reach the position 
-  }
-  */
-  
+
   if (digitalRead(yellowBtn)){
     setColor(YELLOW,1);
     Serial.println("Yellow Button Pressed.");
-    if (modeSelect <= 0){
+    if (modeSelect <= 2){
       ++modeSelect;
     }
-    else {
+    if (modeSelect >= 3){      
       modeSelect = 0;
       headServo.write(90);
     }
@@ -166,14 +154,66 @@ void wanderer(){
   static int leftDistance;
   static int centerDistance;
   static int rightDistance;
-  
+
   setColor(PURPLE,1);  //change eye color
   delay(500);          //delay for human interaction
-  melodyHello();       //play a song
-  delay(1000);         //delay for the music
-  headServo.write(20); //turn head to the left 
-  delay(200);          //delay for servo turning
-  
+
+  if(panDirection){
+    if(headServo.read() != 20){
+      headServo.write(20); //turn head to the left
+      delay(800);          //delay for servo turning
+    }    
+    rightDistance = ping();
+    headServo.write(90); //turn head to center
+    delay(800);          //delay for servo turning
+    centerDistance = ping();
+    headServo.write(160); //turn head to the right 
+    delay(800);          //delay for servo turning
+    leftDistance = ping();
+    panDirection = false;
+  }
+  else{
+    leftDistance = ping();
+    headServo.write(90);
+    delay(800);
+    centerDistance = ping();
+    headServo.write(20); 
+    delay(800);
+    rightDistance = ping();
+    panDirection = true;
+  }
+
+  Serial.print("Right Distance = ");
+  Serial.println(rightDistance);
+  Serial.print("Center Distance = ");
+  Serial.println(centerDistance);
+  Serial.print("Left Distance = ");
+  Serial.println(leftDistance);
+
+  if ((rightDistance < centerDistance) && (centerDistance > leftDistance)){
+    Serial.print("Forward");
+    leftDrive.write(160);
+    rightDrive.write(20);
+    delay(2000);    
+    leftDrive.write(94.25); //stop position of right drive servo
+    rightDrive.write(93); //stop position of left drive servo
+  }
+  if ((rightDistance > centerDistance) && (rightDistance > leftDistance)){
+    Serial.print("Right");
+    leftDrive.write(160);
+    rightDrive.write(160);
+    delay(750);    
+    leftDrive.write(94.25); //stop position of right drive servo
+    rightDrive.write(93); //stop position of left drive servo
+  }
+  if ((leftDistance > centerDistance) && (rightDistance < leftDistance)){
+    Serial.print("Left");
+    leftDrive.write(20);
+    rightDrive.write(20);
+    delay(750);    
+    leftDrive.write(94.25); //stop position of right drive servo
+    rightDrive.write(93); //stop position of left drive servo
+  }
 }
 
 void randHeadTurn(){
@@ -243,10 +283,10 @@ void randomMelody(){
 void melodyHello(){
   // notes in the melody:
   int melody[] = {
-    NOTE_C4, NOTE_E3, NOTE_G3, 0, NOTE_F3, NOTE_A3, NOTE_A4, NOTE_B4        };
+    NOTE_C4, NOTE_E3, NOTE_G3, 0, NOTE_F3, NOTE_A3, NOTE_A4, NOTE_B4              };
   // note durations: 4 = quarter note, 8 = eighth note, etc.:
   int noteDurations[] = {
-    8, 10, 6, 8,10,8,8,10        };
+    8, 10, 6, 8,10,8,8,10              };
   // iterate over the notes of the melody:
   for (int thisNote = 0; thisNote < 8; thisNote++){
     digitalWrite(headLED, HIGH);
@@ -269,10 +309,10 @@ void melodyHello(){
 void melodySup(){
   // notes in the melody:
   int melody[] = {
-    NOTE_B4, NOTE_A4, NOTE_B4        };
+    NOTE_B4, NOTE_A4, NOTE_B4              };
   // note durations: 4 = quarter note, 8 = eighth note, etc.:
   int noteDurations[] = {
-    8,10,8        };
+    8,10,8              };
   // iterate over the notes of the melody:
   for (int thisNote = 0; thisNote < 3; thisNote++){
     digitalWrite(headLED, HIGH);
@@ -295,10 +335,10 @@ void melodySup(){
 void melodyDanger(){
   // notes in the melody:
   int melody[] = {
-    NOTE_A6, NOTE_A6, NOTE_C7        };
+    NOTE_A6, NOTE_A6, NOTE_C7              };
   // note durations: 4 = quarter note, 8 = eighth note, etc.:
   int noteDurations[] = {
-    10,10,6        };
+    10,10,6              };
   // iterate over the notes of the melody:
   for (int thisNote = 0; thisNote < 3; thisNote++){
     digitalWrite(headLED, HIGH);
@@ -317,6 +357,9 @@ void melodyDanger(){
     digitalWrite(headLED, LOW);
   }
 }
+
+
+
 
 
 
