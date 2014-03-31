@@ -60,8 +60,7 @@ long eyeColor = 16777215;  //value for the WS2812 eye LEDs
 unsigned long distance = 0;  //ultrasonic sensor value
 unsigned long randNumber;  //variable for holding random numbers
 
-void setup()
-{
+void setup(){
   Serial.begin(9600);
   attachInterrupt(0, interruptOne, RISING); //create interrupt on pin 2
   headServo.attach(5);
@@ -79,8 +78,22 @@ void setup()
 }
 
 void loop(){ 
+  if (digitalRead(yellowBtn)){
+    setColor(BLUE,1);
+    Serial.println("Yellow Button Pressed.");
+    if (modeSelect <= 2){
+      ++modeSelect;
+    }
+    if (modeSelect >= 3){      
+      modeSelect = 0;
+      headServo.write(90);
+    }
+    delay(500);
+  }
+  
   Serial.print("Current Mode:");
   Serial.println(modeSelect);
+  
   //choose a function based on the modeSelect value
   switch(modeSelect){
   case 0:
@@ -92,26 +105,13 @@ void loop(){
   case 2:
     wanderer();
     break;  
-  }
-
-  if (digitalRead(yellowBtn)){
-    setColor(YELLOW,1);
-    Serial.println("Yellow Button Pressed.");
-    if (modeSelect <= 2){
-      ++modeSelect;
-    }
-    if (modeSelect >= 3){      
-      modeSelect = 0;
-      headServo.write(90);
-    }
-    delay(500);
   } 
 }
 
 void interruptOne(){
   unsigned long currentMillis = millis();
   if(currentMillis - lastMillis > 1500){    
-    setColor(BLUE,1);
+    setColor(WHITE,1);
   }
   delay(250);
   lastMillis = currentMillis;
